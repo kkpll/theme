@@ -1,0 +1,10 @@
+img.alignleft{float: left;margin: 0 20px 20px 0;}
+img.alignright{float: right;margin: 0 0 20px 20px;}
+img.aligncenter{display: block;margin: 0 auto 20px;}
+img.alignnone{margin:0 0 20px 0;max-width: 100%;}
+img.alignleft,img.alignright,img.aligncenter,
+img.alignnone{max-width: 100%;height:auto;}
+@media screen and (max-width: 767px) {
+    img.alignleft,img.alignright,img.aligncenter,
+    img.alignnone{display: block;height: auto;margin: 0 auto 20px;float: none;}
+}

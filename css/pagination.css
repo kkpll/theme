@@ -1,0 +1,34 @@
+.pagination{margin-top:30px;margin-bottom:30px;}
+.pagination::after{display:block;width:100%;clear:both;}
+.pagination .prev{float:left;}
+.pagination .next{float:right;}
+
+
+/* WP PAGE NAVI */
+
+.wp-pagenavi{
+    clear:both;
+    margin-top:30px;
+    margin-bottom:30px;
+}
+
+.wp-pagenavi:after{
+    content:"";
+    width:100%;
+    display:block;
+    clear:both;
+}
+
+.wp-pagenavi a{
+    font-size:14px;
+}
+
+.wp-pagenavi .nextpostslink{
+    float:right;
+    margin-right:10px;
+}
+
+.wp-pagenavi .previouspostslink{
+    float:left;
+    margin-left:10px;
+}

@@ -1,31 +1,140 @@
 <?php
 
-//アイキャッチ有効化
-add_theme_support( 'post-thumbnails' );
-add_image_size( 'my-thumbnails', 768, 768, true );
+/*
+ *
+ * CSSとJAVASCRIPTファイルの読み込み
+ *
+ */
 
-//カスタムメニュー登録
+function load_css_and_js(){
+    //CSS
+    wp_enqueue_style( 'style.css', get_stylesheet_uri() );
+
+    //JAVASCRIPT
+    global $wp_scripts;
+    $jquery = $wp_scripts->registered['jquery-core'];
+    $jq_ver = $jquery->ver;
+    $jq_src = $jquery->src;
+    wp_deregister_script( 'jquery' );
+    wp_deregister_script( 'jquery-core' );
+    wp_register_script( 'jquery', false, array('jquery-core'), $jq_ver, true );
+    wp_register_script( 'jquery-core', $jq_src, array(), $jq_ver, true );
+}
+
+add_action( 'wp_enqueue_scripts', 'load_css_and_js' );
+
+
+
+/*
+ *
+ * アイキャッチ設定
+ *
+ */
+add_theme_support( 'post-thumbnails' );
+//set_post_thumbnail_size( 340, 240, true );
+
+/*
+ *
+ * カスタムメニュー登録
+ *
+ */
 register_nav_menus( array(
     'header' => 'ヘッダーメニュー',
     'footer' => 'フッターメニュー',
+    'sidebar' => 'サイドメニュー',
 ) );
 
-//CSSとJAVASCRIPTを読み込む
-function load_css_and_javascript(){
-    if(!is_admin()){
-        wp_deregister_script('jquery');
-        wp_deregister_script('jquery-core');
-        wp_deregister_script('jquery-migrate');
-        wp_register_script('jquery', false, array('jquery-core', 'jquery-migrate'), '1.12.4', true);
-        wp_enqueue_script('jquery');
-        wp_enqueue_script('jquery-core', '//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js', array(), '1.12.4', true);
-        wp_enqueue_script('jquery-migrate', '//cdnjs.cloudflare.com/ajax/libs/jquery-migrate/1.4.1/jquery-migrate.min.js', array(), '1.4.1', true);
+class SimpleMenuWalker extends Walker_Nav_Menu {
 
-        //ここにCSSとJAVASCRIPTを読み込む
+    function start_lvl( &$output, $depth ){$output .= "";}
+    function end_lvl( &$output, $depth ) {$output .= "";}
+    function start_el( &$output, $item, $depth, $args ) {$output .= $this->create_a_tag($item, $depth, $args);}
+    function end_el( &$output, $item, $depth, $args ) {$output .= '';}
 
+    private function create_a_tag($item, $depth, $args) {
+        $href = ! empty( $item->url ) ? ' href="'.esc_attr( $item->url) .'"' : '';
+        $item_output = sprintf( '<a%1$s class="field-box-item">%2$s</a>',
+            $href,
+            apply_filters( 'the_title', $item->title, $item->ID)
+        );
+        return apply_filters( 'walker_nav_menu_start_el', $item_output, $item, $depth, $args );
+    }
+
+}
+
+class SideMenuWalker extends Walker_Nav_Menu {
+    function start_lvl( &$output, $depth ){$output .= "";}
+    function end_lvl( &$output, $depth ) {$output .= "";}
+    function start_el( &$output, $item, $depth, $args ) {
+        if (in_array('menu-item-has-children', $item->classes)) {
+            // 親の場合
+            $indent = " ";
+            $output .= "\n".'<li>';
+            $output .= $this->create_a_tag($item, $depth, $args);
+            $output .= "\n" . $indent . '<ul>';
+        }
+        else {
+            // 子の場合
+            $output .= '<li>';
+            $output .= $this->create_a_tag($item, $depth, $args);
+        }
+    }
+    function end_el( &$output, $item, $depth, $args ) {
+        if (in_array('menu-item-has-children', $item->classes)) {
+            // 親の場合
+            $output .= "\n".'</li></ul></li>';
+        }
+        else {
+            // 子の場合
+            $output .= "\n".'</li>';
+        }
+    }
+
+    private function create_a_tag($item, $depth, $args) {
+        $href = ! empty( $item->url ) ? ' href="'.esc_attr( $item->url) .'"' : '';
+        $item_output = sprintf( '<a%1$s>%2$s</a>',
+            $href,
+            apply_filters( 'the_title', $item->title, $item->ID)
+        );
+        return apply_filters( 'walker_nav_menu_start_el', $item_output, $item, $depth, $args );
+    }
+
+}
+
+
+/*
+ *
+ * ページネーション設定
+ *
+ */
+function change_posts_per_page($query) {
+    if ( is_admin() || ! $query->is_main_query() ) {
+        return;
+    }
+
+    $taxonomies = get_taxonomies(array('_builtin'=>false));
+    $my_taxonomies = array();
+    foreach($taxonomies as $taxonomy){
+        array_push($my_taxonomies,$taxonomy);
+    }
+
+    $categories = get_categories();
+    $my_categories = array();
+    foreach($categories as $category){
+        array_push($my_categories,$category->slug);
+    }
+
+    $posttypes = get_post_types(array('_builtin'=>false));
+    $my_posttypes = array();
+    foreach($posttypes as $posttype){
+        array_push($my_posttypes,$posttype);
+    }
+
+    if( $query->is_category($my_categories) || $query->is_tax($my_taxonomies) || $query->is_post_type_archive($my_posttypes)){
+        $query->set( 'posts_per_page',get_option('posts_per_page'));
     }
 }
-add_action( 'wp_enqueue_scripts', 'load_css_and_javascript' );
+add_action('pre_get_posts', 'change_posts_per_page' );
 
 
 /**
@@ -110,30 +219,37 @@ function get_page_title(){
  *
 */
 
-function get_post_data(){
+function get_the_post_data(){
 
-    $return = array(); //記事データ
+    $return = array();
 
     global $post;
 
     $post_id = $post->ID;
+    $post_type = $post->post_type;
+    $post_type_obj = get_post_type_object($post_type);
+    $return['post_type'] = $post_type;
+    $return['post_type_name'] = $post_type_obj->labels->singular_name;
     $return['permalink'] = get_the_permalink(); //パーマリンク
     $return['title'] = $post->post_title; //タイトル
     $return['content'] = $post->post_content; //本文
     $return['thumbnail'] = has_post_thumbnail() ? get_the_post_thumbnail_url($post_id,'my-thumbnails') : NULL; //サムネイルURL
     $return['date'] = get_the_time('Y年n月j日'); //日付
     $return['excerpt'] = $post->post_excerpt; //抜粋
+    $return['category'] = array();
+    $return['tag'] = array();
 
     //記事が持つタクソノミーをすべて取得
     if($taxs = get_post_taxonomies()){
         foreach((array)$taxs as $tax){
             //post_formatだけ取り除く
             if($tax !== "post_format"){
-                $return[$tax] = array();
+                $taxonomy = get_taxonomy($tax);
+                $taxonomy_type = $taxonomy->hierarchical ? 'category' : 'tag';
+                $return[$taxonomy_type][$tax] = array();
                 $terms = get_the_terms($post_id, $tax);
                 foreach ((array)$terms as $term){
-                    //ターム名とパーマリンクを取得
-                    array_push($return[$tax], array('name' => $term->name, 'link' => get_category_link($term->term_id)));
+                    array_push($return[$taxonomy_type][$tax], array('name' => $term->name, 'slug'=> $term->slug,'link' => get_category_link($term->term_id)));
                 }
             }
         }
@@ -149,52 +265,70 @@ function get_post_data(){
  * 関連記事取得
  *
  * シングルページと固定ページで関連記事を取得
- * HTMLを返す
  *
- * @return string 関連記事 $output
+ *
+ * @return array 関連記事 $return
  *
  *
  */
-function get_related_posts(){
+function get_the_related_posts(){
 
     global $post;
 
-    $output = '';
+    $return = array();
 
     if (is_single()){
+
         $post_type = get_post_type();
         $post_type_object = get_post_type_object($post_type);
-        if($post_type) {
-            if($post_type == "post"){
-                $categories = get_the_category();
-                $related_post_name = $categories[0]->cat_name;
-                $related_posts = get_posts(array('category__in' => array($categories[0]->cat_ID), 'exclude' => $post->ID, 'numberposts' => -1));
-            }else{
-                $related_post_name = esc_html($post_type_object->labels->singular_name);
-                $related_posts = get_posts(array('post_type' => $post_type, 'exclude' => $post->ID ,'numberposts' => -1));
+
+        if($post_type == "post"){
+            $categories = get_the_category();
+            $title = $categories[0]->cat_name;
+            $related_posts = get_posts(array('category__in' => array($categories[0]->cat_ID), 'exclude' => $post->ID, 'numberposts' => -1));
+        }else{
+            $title = esc_html($post_type_object->labels->singular_name);
+            $related_posts = get_posts(array('post_type' => $post_type, 'exclude' => $post->ID ,'numberposts' => -1));
+        }
+        $excerpt = get_the_excerpt();
+
+        if($related_posts){
+            $return['title'] = $title;
+            $return['posts'] = array();
+            foreach($related_posts as $related_post){
+                array_push($return['posts'],array('title'=>$related_post->post_title,'permalink'=>get_permalink($related_post->ID),'content'=>$related_post->post_content,'excerpt'=>$related_post->post_excerpt));
             }
         }
 
-        if($related_posts){
-            $output .= "<ul class='related-posts'>";
-            $output .= "<h2 class='related-posts__title'>「".$related_post_name."」の関連記事はこちら</h2>";
-            foreach($related_posts as $related_post){
-                $output .= "<li><a href='".get_permalink($related_post->ID)."'>".$related_post->post_title."</a></li>";
-            }
-            $output .= "</ul>";
-        }
     }elseif(is_page()){
+
+        $related_query = new WP_Query();
+        $args = $related_query->query(array(
+            'post_type' => 'page',
+            'nopaging'  => 'true'
+        ));
+
         if($parent_id = $post->post_parent ){
-            $children = wp_list_pages( "title_li=&child_of=".$post->post_parent."&echo=0&exclude=".$post->ID);
-            $related_post_name = get_post($parent_id)->post_title;
+            $target = $parent_id;
+            $title = get_post($parent_id)->post_title;
         }else{
-            $children = wp_list_pages( "title_li=&child_of=".$post->ID."&echo=0&exclude=".$post->ID );
-            $related_post_name = get_the_title();
+            $target = $post->ID;
+            $title = $post->post_title;
         }
-        if($children){
-            $output .= "<ul class='related-posts'><h2>「".$related_post_name."」の関連ページはこちら</h2>".$children."</ul>";
+        $excerpt = $post->post_excerpt;
+
+        $related_posts = get_page_children($target, $args);
+
+        if($related_posts) {
+            $return['title'] = $title;
+            $return['posts'] = array();
+            foreach ($related_posts as $related_post) {
+                array_push($return['posts'],array('title'=>$related_post->post_title,'permalink'=>get_permalink($related_post->ID),'content'=>$related_post->post_content,'excerpt'=>$related_post->post_excerpt));
+            }
         }
     }
 
-    return $output;
+    return $return;
 }
+
+

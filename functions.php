@@ -8,7 +8,8 @@
 
 function load_css_and_js(){
     //CSS
-    wp_enqueue_style( 'style.css', get_stylesheet_uri() );
+    wp_enqueue_style( 'style.css', get_stylesheet_uri(),array(), filemtime(get_stylesheet_directory()),"all");
+    wp_enqueue_style( 'mobile.css', get_template_directory_uri().'/css/style-sp.css',array('style.css'),filemtime(get_template_directory().'/css/mobile.css'),'screen and (max-width:768px)');
 
     //JAVASCRIPT
     global $wp_scripts;

@@ -338,13 +338,6 @@ function get_array_from_textarea_by_br($str){
     return $arr;
 }
 
-//パンくずリスト出力
-function pankuzu(){
-    if (function_exists('bcn_display')) {
-        bcn_display();
-    }
-}
-
 //パンくずリスト
 function breadcrumb( $wp_obj = null ) {
 
@@ -582,8 +575,6 @@ function breadcrumb( $wp_obj = null ) {
 }
 
 
-
-
 //ページネーション
 function pagenation(){
 
@@ -610,3 +601,62 @@ function remove_page_title_prefix($title='' ){
     return preg_replace($search, '$1', $title);}
 add_filter( 'the_title', 'remove_page_title_prefix' );
 
+
+
+//再帰処理サンプル
+class Sample {
+    public function __construct () {
+        $this->list_page_render();
+    }
+
+    public function list_page_render () {
+        echo 'Current PHP version: ' . phpversion() . PHP_EOL;
+
+        // カテゴリー階層配列(idはユニーク)
+        $terms = array(
+            array( 'id' => 1, 'parent_id' => 0, 'name' => 'Size' ),
+            array( 'id' => 2, 'parent_id' => 0, 'name' => 'Gender' ),
+            array( 'id' => 3, 'parent_id' => 1, 'name' => 'L' ),
+            array( 'id' => 4, 'parent_id' => 1, 'name' => 'M' ),
+            array( 'id' => 5, 'parent_id' => 2, 'name' => 'Men' ),
+            array( 'id' => 6, 'parent_id' => 5, 'name' => 'Pants' ),
+            array( 'id' => 7, 'parent_id' => 2, 'name' => 'Women' ),
+            array( 'id' => 8, 'parent_id' => 7, 'name' => 'Skirt' )
+        );
+
+        // 親IDだけの配列を作成
+        $parent_ids = array();
+        foreach ( $terms as $term ) {
+            $parent_ids[] = $term['parent_id'];
+        }
+
+        // カテゴリーの最下層のidを配列に保持
+        $term_bottom = array();
+        foreach ( $terms as $term ) {
+            if ( !in_array( $term['id'], $parent_ids ) ) {
+                $term_bottom[] = $term['id'];
+            }
+        }
+
+        // 最下層の配列をループして木構造の頂点まで（$parent_id = 0）
+        $categories = array();
+        foreach ( $term_bottom as $term_id ) {
+            $categories[] = $this->set_ids( $term_id, $terms );
+        }
+        var_dump( $categories );
+    }
+
+    private function set_ids ( $id, $terms, $args = array() ) {
+        if ( $id == 0 ) {
+            return array_reverse( $args );
+        } else {
+            $args[] = $id;
+
+            foreach ( $terms as $term ) {
+                if ( $term['id'] == $id ) {
+                    return $this->set_ids( $term['parent_id'], $terms, $args );
+                }
+            }
+        }
+    }
+}

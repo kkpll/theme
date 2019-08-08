@@ -1,16 +1,16 @@
-.thumb-container{
+.thumbnail{
     box-sizing:border-box;
     position:relative;
     width:100%;
 }
 
-.thumb-container:before{
+.thumbnail:before{
     content:"";
     display: block;
-    padding-top: 100%;
+    padding-top: 65%;
 }
 
-.thumb-container > * {
+.thumbnail > * {
     position: absolute;
     top: 0;
     left: 0;
@@ -18,5 +18,5 @@
     right: 0;
     background-repeat: no-repeat;
     background-position: center;
-    background-size:contain;
+    background-size:cover;
 }

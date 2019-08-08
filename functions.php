@@ -14,12 +14,12 @@ function load_css_and_js(){
     //JAVASCRIPT
     global $wp_scripts;
     $jquery = $wp_scripts->registered['jquery-core'];
-    $jq_ver = $jquery->ver;
-    $jq_src = $jquery->src;
+    $jquery_ver = $jquery->ver;
+    $jquery_src = $jquery->src;
     wp_deregister_script( 'jquery' );
     wp_deregister_script( 'jquery-core' );
-    wp_register_script( 'jquery', false, array('jquery-core'), $jq_ver, true );
-    wp_register_script( 'jquery-core', $jq_src, array(), $jq_ver, true );
+    wp_register_script( 'jquery', false, array('jquery-core'), $jquery_ver, true );
+    wp_register_script( 'jquery-core', $jquery_src, array(), $jquery_ver, true );
 }
 
 add_action( 'wp_enqueue_scripts', 'load_css_and_js' );
@@ -348,10 +348,10 @@ function breadcrumb( $wp_obj = null ) {
     //そのページのWPオブジェクトを取得
     $wp_obj = $wp_obj ?: get_queried_object();
 
-    echo '<div class="breadcrumb">'.  //id名などは任意で
+    echo '<div class="breadcrumb">'.
         '<ul>'.
         '<li>'.
-        '<a href="'. home_url() .'"><span>ホーム</span></a>'.
+        '<a href="'.home_url().'"><span>ホーム</span></a>'.
         '</li>';
 
     if ( is_attachment() ) {
@@ -362,7 +362,7 @@ function breadcrumb( $wp_obj = null ) {
          */
         echo '<li><span>'. $wp_obj->post_title .'</span></li>';
 
-    } elseif ( is_single() ) {
+    }elseif(is_single()){
 
         /**
          * 投稿ページ ( $wp_obj : WP_Post )
@@ -577,8 +577,32 @@ function breadcrumb( $wp_obj = null ) {
 
 
 //ページネーション
-function pagenation(){
+function pagination($pages,$paged) {
 
+    $pages = (int) $pages;
+    $paged = $paged ?: 1;
+
+    $text_before  = "‹ 前のページへ";
+    $text_next    = "次のページへ ›";
+
+    if ( $pages === 1 ) return;
+
+    if ( 1 !== $pages ) {
+        //２ページ以上の時
+        echo '<div class="pagination"><span class="page_num">Page ', $paged ,' of ', $pages ,'</span>';
+
+        if ( $paged > 1 ) {
+            // 「前へ」 の表示
+            echo '<a href="', get_pagenum_link( $paged - 1 ) ,'" class="prev">', $text_before ,'</a>';
+        }
+
+        if ( $paged < $pages ) {
+            // 「次へ」 の表示
+            echo '<a href="', get_pagenum_link( $paged + 1 ) ,'" class="next">', $text_next ,'</a>';
+        }
+
+        echo '</div>';
+    }
 }
 
 //非公開・下書きでも固定ページを親に設定できる
@@ -601,8 +625,6 @@ function remove_page_title_prefix($title='' ){
     $search[1] = '/^' . str_replace('%s', '(.*)', preg_quote(__('Private: %s'), '/' )) . '$/';
     return preg_replace($search, '$1', $title);}
 add_filter( 'the_title', 'remove_page_title_prefix' );
-
-
 
 //再帰処理サンプル
 class Sample {
@@ -661,3 +683,4 @@ class Sample {
         }
     }
 }
+

@@ -626,8 +626,70 @@ function remove_page_title_prefix($title='' ){
     return preg_replace($search, '$1', $title);}
 add_filter( 'the_title', 'remove_page_title_prefix' );
 
+
+//固定ページ出力
+function get_sitemap($excludes=array()){
+
+    $sitemap = '<ul class="sitemap">';
+
+    $args = array(
+        'sort_order' => 'ASC',
+        'sort_column' => 'menu_order',
+        'hierarchical' => 1,
+        'exclude' => $excludes,
+        'include' => '',
+        'meta_key' => '',
+        'meta_value' => '',
+        'authors' => '',
+        'child_of' => 0,
+        'parent' => -1,
+        'exclude_tree' => '',
+        'number' => '',
+        'offset' => 0,
+        'post_type' => 'page',
+        'post_status' => 'publish,private'
+    );
+
+    $pages = get_pages($args);
+
+    $pages_removed_childs = array();
+
+    foreach($pages as $page){
+        if(!$page->post_parent){
+            array_push($pages_removed_childs,$page);
+        }
+    }
+    foreach($pages_removed_childs as $page){
+        $childs = get_pages( array( 'child_of' => $page->ID, 'sort_column' => 'menu_order', 'sort_order' => 'asc','exclude' => $excludes,) );
+        if($childs){
+            if($page->post_status=="publish"){
+                $sitemap .= "<li><a href='".get_permalink($page->ID)."'>".$page->post_title."</a>";
+            }else{
+                $sitemap .= "<li>".$page->post_title;
+            }
+            $sitemap .= "<ul class='children'>";
+            foreach($childs as $child){
+                $sitemap .= "<li><a href='".get_permalink($child->ID)."'>".$child->post_title."</a></li>";
+            }
+            $sitemap .= "</ul>";
+            $sitemap .= "</li>";
+        }else{
+            if($page->post_status == "publish"){
+                $sitemap .= "<li><a href='".get_permalink($page->ID)."'>".$page->post_title."</a></li>";
+            }
+        }
+    }
+
+    $sitemap .= '</ul>';
+
+    return $sitemap;
+
+}
+
+
 //再帰処理サンプル
-class Sample {
+class Sitemap {
+
     public function __construct () {
         $this->list_page_render();
     }
@@ -666,7 +728,7 @@ class Sample {
         foreach ( $term_bottom as $term_id ) {
             $categories[] = $this->set_ids( $term_id, $terms );
         }
-        var_dump( $categories );
+        var_dump($categories);
     }
 
     private function set_ids ( $id, $terms, $args = array() ) {
@@ -683,4 +745,6 @@ class Sample {
         }
     }
 }
+
+
 

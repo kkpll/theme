@@ -148,7 +148,7 @@ add_action('pre_get_posts', 'change_posts_per_page' );
  *
  */
 
-function get_page_title(){
+function get_the_page_title(){
 
     global $post;
 
@@ -272,6 +272,8 @@ function get_the_post_data(){
  *
  *
  */
+
+//関連記事
 function get_the_related_posts(){
 
     global $post;
@@ -291,7 +293,6 @@ function get_the_related_posts(){
             $title = esc_html($post_type_object->labels->singular_name);
             $related_posts = get_posts(array('post_type' => $post_type, 'exclude' => $post->ID ,'numberposts' => -1));
         }
-        $excerpt = get_the_excerpt();
 
         if($related_posts){
             $return['title'] = $title;
@@ -310,8 +311,13 @@ function get_the_related_posts(){
         ));
 
         if($parent_id = $post->post_parent ){
-            $target = $parent_id;
-            $title = get_post($parent_id)->post_title;
+            if(get_children(array('post_parent'=>$post->ID,'post_status'=>'publish','post_type'=>'page'))){
+                $target = $post->ID;
+                $title = $post->post_title;
+            }else{
+                $target = $parent_id;
+                $title = get_post($parent_id)->post_title;
+            }
         }else{
             $target = $post->ID;
             $title = $post->post_title;
@@ -324,13 +330,20 @@ function get_the_related_posts(){
             $return['title'] = $title;
             $return['posts'] = array();
             foreach ($related_posts as $related_post) {
-                array_push($return['posts'],array('title'=>$related_post->post_title,'permalink'=>get_permalink($related_post->ID),'content'=>$related_post->post_content,'excerpt'=>$related_post->post_excerpt));
+                //子ページが無いページのみ（１階層しか表示しない）
+                if(!get_children( array('post_parent'=>$related_post->ID,'post_status'=>'publish','post_type'=>'page'))){
+                    if($post->ID != $related_post->ID){
+                        array_push($return['posts'],array('title'=>$related_post->post_title,'permalink'=>get_permalink($related_post->ID),'content'=>$related_post->post_content,'excerpt'=>$related_post->post_excerpt));
+                    }
+                }
             }
         }
     }
 
     return $return;
 }
+
+
 
 //テキストエリアの内容を改行コードで分割して配列を返す
 function get_array_from_textarea_by_br($str){
@@ -348,8 +361,7 @@ function breadcrumb( $wp_obj = null ) {
     //そのページのWPオブジェクトを取得
     $wp_obj = $wp_obj ?: get_queried_object();
 
-    echo '<div class="breadcrumb">'.
-        '<ul>'.
+    echo '<ul class="breadcrumb">'.
         '<li>'.
         '<a href="'.home_url().'"><span>ホーム</span></a>'.
         '</li>';
@@ -571,7 +583,7 @@ function breadcrumb( $wp_obj = null ) {
         echo '<li><span>'. get_the_title() .'</span></li>';
     }
 
-    echo '</ul></div>';  // 冒頭に合わせて閉じタグ
+    echo '</ul>';  // 冒頭に合わせて閉じタグ
 
 }
 
@@ -589,7 +601,6 @@ function pagination($pages,$paged) {
 
     if ( 1 !== $pages ) {
         //２ページ以上の時
-        echo '<div class="pagination"><span class="page_num">Page ', $paged ,' of ', $pages ,'</span>';
 
         if ( $paged > 1 ) {
             // 「前へ」 の表示

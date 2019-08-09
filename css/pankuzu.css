@@ -1,1 +1,16 @@
-.pankuzu{font-size:12px;padding:5px 15px;text-align:right;}
+/* Breadcrumb */
+
+.breadcrumb{
+    margin-bottom:1em;
+}
+
+.breadcrumb li{
+    display: inline-block;
+    font-size:11px;
+}
+
+.breadcrumb li:not(:first-child):before{
+    content:"/";
+    margin-left:5px;
+    margin-right:5px;
+}

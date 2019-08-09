@@ -1,0 +1,6 @@
+/* Archive post */
+
+.archive-post{line-height:1.2 !important;margin-bottom:0.5em;}
+.archive-post__date{display:inline-block;font-size:11px;color:lightgray;}
+.archive-post__cat{display:inline-block;font-size:11px;color:#ff8a00;}
+.archive-post__title{display:block;}
